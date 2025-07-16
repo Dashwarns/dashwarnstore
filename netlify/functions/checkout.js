@@ -1,29 +1,39 @@
-const fetch = require("node-fetch");
-
-exports.handler = async (event) => {
+exports.handler = async function (event, context) {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return { statusCode: 405, body: "Metode tidak diizinkan" };
   }
 
-  try {
-    const data = JSON.parse(event.body);
-    const url = "https://script.google.com/macros/s/AKfycbzC-zUWzo-pK8L7Ra9pnyuU1AoPUex-ZX3bK1VyGOewFn9VA1qG-bW1b4iXsjjTE3A/exec";
+  const data = JSON.parse(event.body);
+  const items = data.items;
+  const kodeUnik = data.kodeUnik;
+  const tanggal = new Date().toISOString().split("T")[0];
 
-    const response = await fetch(url, {
+  const rows = items.map(item => [
+    item.name,
+    item.price,
+    kodeUnik,
+    "Pending",     // ⬅️ Status default
+    tanggal
+  ]);
+
+  const body = JSON.stringify({ data: rows });
+
+  try {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzC-zUWzo-pK8L7Ra9pnyuU1AoPUex-ZX3bK1VyGOewFn9VA1qG-bW1b4iXsjjTE3A/exec", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body
     });
 
     const text = await response.text();
     return {
       statusCode: 200,
-      body: text
+      body: JSON.stringify({ success: true, kodeUnik })
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: `Error: ${error.message}`
+      body: JSON.stringify({ success: false, message: error.message })
     };
   }
 };
