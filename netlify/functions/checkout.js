@@ -7,7 +7,13 @@ export const handler = async function (event, context) {
   }
 
   try {
-    const { items, kodeUnik } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+    const items = body.items;
+    const kodeUnik = body.kodeUnik;
+
+    console.log("ITEMS:", items);
+    console.log("KODE UNIK:", kodeUnik);
+
     const tanggal = new Date().toISOString().split("T")[0];
 
     const rows = items.map((item) => [
@@ -19,6 +25,7 @@ export const handler = async function (event, context) {
     ]);
 
     const payload = JSON.stringify({ data: rows });
+    console.log("PAYLOAD:", payload);
 
     const response = await fetch(
       "https://script.google.com/macros/s/AKfycbwykj1f56R9J9J32Kjh3iFHbbjNPsHQs3GjYPX-q5ADUusOUnU5TYeapxqUXqLYzcY/exec",
@@ -32,14 +39,14 @@ export const handler = async function (event, context) {
     );
 
     const text = await response.text();
+    console.log("RESPONS DARI SCRIPT:", text);
 
-    // Validasi manual respons dari Google Script
     if (!text.includes("OK")) {
       return {
         statusCode: 500,
         body: JSON.stringify({
           success: false,
-          message: "Gagal mengirim data ke Google Sheets",
+          message: "Gagal mengirim ke Google Sheets",
           response: text,
         }),
       };
@@ -50,9 +57,10 @@ export const handler = async function (event, context) {
       body: JSON.stringify({ success: true, kodeUnik }),
     };
   } catch (error) {
+    console.error("ERROR:", error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: error.message }),
+      body: JSON.stringify({ success: false, message: error.message }),
     };
   }
 };
