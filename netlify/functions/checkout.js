@@ -1,3 +1,5 @@
+console.log("ITEMS:", items);
+console.log("KODE UNIK:", kodeUnik);
 const fetch = require("node-fetch");
 
 exports.handler = async function (event, context) {
