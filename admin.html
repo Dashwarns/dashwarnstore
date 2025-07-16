@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - DashWarnStore</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: #a855f7;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #111;
+    }
+    th, td {
+      border: 1px solid #9333ea;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #1f1f1f;
+    }
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: #a855f7;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="back-btn" onclick="window.location.href='index.html'">X</button>
+  <h1>Data Checkout</h1>
+  <table id="data">
+    <thead>
+      <tr>
+        <th>Waktu</th>
+        <th>Item</th>
+        <th>Total</th>
+        <th>Kode Unik</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const sheetID = "1anrfiJVJtYh-m0CRPbZ7yxVOgxumGbaOg4bn0q7LPMQ";
+    const sheetName = "Sheet1";
+    const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+
+    fetch(url)
+      .then(res => res.text())
+      .then(rep => {
+        const data = JSON.parse(rep.substr(47).slice(0, -2));
+        const table = document.querySelector("tbody");
+
+        data.table.rows.forEach(row => {
+          const tr = document.createElement("tr");
+          row.c.forEach(cell => {
+            const td = document.createElement("td");
+            td.textContent = cell?.v || "";
+            tr.appendChild(td);
+          });
+          table.appendChild(tr);
+        });
+      });
+  </script>
+</body>
+</html>

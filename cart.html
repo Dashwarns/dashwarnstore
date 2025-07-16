@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Keranjang | DashWarnStore</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .top-bar button {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #fff;
+      cursor: pointer;
+    }
+    .cart-item {
+      background: #111;
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid #9333ea;
+      border-radius: 8px;
+    }
+    .total {
+      font-weight: bold;
+      margin-top: 16px;
+    }
+    .btn {
+      background: #9333ea;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn:hover {
+      background: #a855f7;
+    }
+    .kode {
+      font-size: 24px;
+      color: #9333ea;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <button onclick="window.location.href='index.html'">❌</button>
+  </div>
+
+  <div id="cart-section">
+    <h1>Keranjang</h1>
+    <div id="cart-items"></div>
+    <div class="total" id="total">Total: 0 Rp</div>
+    <button class="btn" onclick="checkout()">Checkout</button>
+  </div>
+
+  <div id="success-section" style="display:none;">
+    <h1>Checkout Berhasil!</h1>
+    <div class="kode" id="kode-unik"></div>
+    <button class="btn" onclick="window.location.href='index.html'">❌ Kembali</button>
+  </div>
+
+  <script>
+    const cart = JSON.parse(localStorage.getItem("dashwarn_cart")) || [];
+
+    function renderCart() {
+      const items = document.getElementById("cart-items");
+      const totalDiv = document.getElementById("total");
+      let total = 0;
+      items.innerHTML = "";
+
+      if (cart.length === 0) {
+        items.innerHTML = "<p>Keranjang kosong.</p>";
+        totalDiv.textContent = "";
+        return;
+      }
+
+      cart.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "cart-item";
+        div.textContent = `${item.name} - ${item.price.toLocaleString("id-ID")} Rp`;
+        items.appendChild(div);
+        total += item.price;
+      });
+
+      totalDiv.textContent = `Total: ${total.toLocaleString("id-ID")} Rp`;
+    }
+
+    function generateCode() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      const len = Math.floor(Math.random() * 6) + 5;
+      return Array(len).fill(0).map(() => chars[Math.floor(Math.random() * chars.length)]).join("");
+    }
+
+    function checkout() {
+      if (cart.length === 0) {
+        alert("Keranjang kosong!");
+        return;
+      }
+
+      const kode = generateCode();
+      const waktu = new Date().toLocaleString("id-ID");
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const produk = cart.map(item => item.name).join(", ");
+
+      const data = { waktu, kode, produk, total };
+
+      fetch("/.netlify/functions/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Gagal");
+        return res.text();
+      })
+      .then(() => {
+        localStorage.removeItem("dashwarn_cart");
+        document.getElementById("cart-section").style.display = "none";
+        document.getElementById("success-section").style.display = "block";
+        document.getElementById("kode-unik").textContent = "Kode Unik: " + kode;
+      })
+      .catch(() => {
+        alert("❌ Gagal checkout. Coba lagi.");
+      });
+    }
+
+    renderCart();
+  </script>
+</body>
+</html>
