@@ -3,22 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin - DashWarnStore</title>
+  <title>Admin DashWarnStore</title>
   <style>
     body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #000;
+      background-color: #000;
       color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
     }
-    iframe {
-      width: 100vw;
-      height: 100vh;
-      border: none;
+    h1 {
+      color: #9333ea;
+    }
+    #response {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #9333ea;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+      background-color: #1f1f1f;
+      color: white;
+    }
+    .status {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <iframe src="https://docs.google.com/spreadsheets/d/1anrfiJVJtYh-m0CRPbZ7yxVOgxumGbaOg4bn0q7LPMQ/edit?usp=sharing&rm=minimal"></iframe>
+
+  <h1>Admin Panel</h1>
+  <p>Ketik perintah seperti: <strong>/done KODEUNIK</strong> untuk menyelesaikan transaksi.</p>
+  <input type="text" id="commandInput" placeholder="/done 5XQZ9">
+  <div id="response"></div>
+
+  <script>
+    const input = document.getElementById("commandInput");
+    const responseBox = document.getElementById("response");
+
+    input.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        const cmd = input.value.trim();
+        if (cmd.startsWith("/done ")) {
+          const kodeUnik = cmd.split(" ")[1];
+
+          const formData = new URLSearchParams();
+          formData.append("kodeUnik", kodeUnik);
+          formData.append("status", "Berhasil");
+
+          try {
+            const res = await fetch("https://script.google.com/macros/s/AKfycbzC-zUWzo-pK8L7Ra9pnyuU1AoPUex-ZX3bK1VyGOewFn9VA1qG-bW1b4iXsjjTE3A/exec", {
+              method: "POST",
+              body: formData
+            });
+            const text = await res.text();
+            responseBox.textContent = text === "OK"
+              ? `✅ Status untuk ${kodeUnik} diubah ke "Berhasil".`
+              : `⚠️ ${text}`;
+          } catch (err) {
+            responseBox.textContent = "❌ Gagal mengirim permintaan.";
+          }
+        } else {
+          responseBox.textContent = "❌ Perintah tidak dikenali.";
+        }
+      }
+    });
+  </script>
+
 </body>
 </html>
