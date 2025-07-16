@@ -2,76 +2,101 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin DashWarnStore</title>
+  <title>Admin Panel - DashWarnStore</title>
   <style>
     body {
-      background-color: #000;
+      background: #000;
       color: #fff;
       font-family: Arial, sans-serif;
       padding: 20px;
     }
-    h1 {
-      color: #9333ea;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
     }
-    #response {
-      margin-top: 10px;
-      font-weight: bold;
+    th, td {
+      border: 1px solid #9333ea;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #9333ea;
     }
     input {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #9333ea;
-      width: 100%;
-      max-width: 400px;
+      padding: 6px;
       margin-top: 10px;
-      background-color: #1f1f1f;
-      color: white;
-    }
-    .status {
-      margin-top: 20px;
+      width: 100%;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
-
   <h1>Admin Panel</h1>
-  <p>Ketik perintah seperti: <strong>/done KODEUNIK</strong> untuk menyelesaikan transaksi.</p>
-  <input type="text" id="commandInput" placeholder="/done 5XQZ9">
-  <div id="response"></div>
+  <input id="command" placeholder="Ketik perintah... (contoh: /done ABC123)" />
+  <table>
+    <thead>
+      <tr>
+        <th>Produk</th>
+        <th>Harga</th>
+        <th>Kode Unik</th>
+        <th>Status</th>
+        <th>Tanggal</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <tr><td colspan="5">Memuat data...</td></tr>
+    </tbody>
+  </table>
 
   <script>
-    const input = document.getElementById("commandInput");
-    const responseBox = document.getElementById("response");
+    const sheetURL = "https://script.google.com/macros/s/AKfycbyk5odODY7xZoS4yUHPvyQBdYBDWrqv2oTtk8zYeEFEwuYbV6YGofqoedVk6fwdkHs/exec";
 
-    input.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
-        const cmd = input.value.trim();
-        if (cmd.startsWith("/done ")) {
-          const kodeUnik = cmd.split(" ")[1];
+    let sheetData = [];
 
-          const formData = new URLSearchParams();
-          formData.append("kodeUnik", kodeUnik);
-          formData.append("status", "Berhasil");
-
-          try {
-            const res = await fetch("https://script.google.com/macros/s/AKfycbzC-zUWzo-pK8L7Ra9pnyuU1AoPUex-ZX3bK1VyGOewFn9VA1qG-bW1b4iXsjjTE3A/exec", {
-              method: "POST",
-              body: formData
+    function loadData() {
+      fetch(sheetURL)
+        .then(res => res.json())
+        .then(data => {
+          sheetData = data;
+          const tbody = document.getElementById("table-body");
+          tbody.innerHTML = "";
+          data.forEach(row => {
+            const tr = document.createElement("tr");
+            row.forEach(cell => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              tr.appendChild(td);
             });
-            const text = await res.text();
-            responseBox.textContent = text === "OK"
-              ? `✅ Status untuk ${kodeUnik} diubah ke "Berhasil".`
-              : `⚠️ ${text}`;
-          } catch (err) {
-            responseBox.textContent = "❌ Gagal mengirim permintaan.";
-          }
-        } else {
-          responseBox.textContent = "❌ Perintah tidak dikenali.";
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(err => {
+          document.getElementById("table-body").innerHTML = `<tr><td colspan="5">Gagal memuat data.</td></tr>`;
+          console.error("Gagal ambil data:", err);
+        });
+    }
+
+    document.getElementById("command").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        const value = e.target.value.trim();
+        if (value.startsWith("/done ")) {
+          const kode = value.split(" ")[1];
+          updateStatus(kode);
         }
       }
     });
-  </script>
 
+    function updateStatus(kodeUnik) {
+      fetch(sheetURL + "?done=" + kodeUnik)
+        .then(res => res.text())
+        .then(msg => {
+          alert(msg);
+          loadData();
+        });
+    }
+
+    loadData();
+  </script>
 </body>
 </html>
