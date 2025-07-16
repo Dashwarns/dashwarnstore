@@ -81,7 +81,7 @@
     function renderTable() {
       const tbody = document.getElementById("dataBody");
       tbody.innerHTML = "";
-      sheetData.forEach(row => {
+      sheetData.slice(1).forEach(row => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row[0]}</td>
@@ -95,31 +95,17 @@
     }
 
     async function updateStatus(kodeUnik) {
-      const updated = sheetData.map((row, i) => {
-        if (row[2] === kodeUnik && row[3] !== "Berhasil") {
-          return [i + 1]; // +1 karena baris di Google Sheets mulai dari 1
+      try {
+        const res = await fetch(sheetURL + "?done=" + kodeUnik);
+        const text = await res.text();
+        if (text.toLowerCase().includes("berhasil")) {
+          alert("Status diperbarui.");
+          fetchData();
+        } else {
+          alert("Gagal memperbarui status: " + text);
         }
-        return null;
-      }).filter(x => x);
-
-      if (updated.length === 0) {
-        alert("Kode tidak ditemukan atau sudah berhasil.");
-        return;
-      }
-
-      // Kirim update ke Google Sheets
-      const res = await fetch(sheetURL + "?updateStatus=true", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: updated })
-      });
-
-      const text = await res.text();
-      if (text.includes("OK")) {
-        alert("Status diperbarui.");
-        fetchData();
-      } else {
-        alert("Gagal mengubah status.");
+      } catch (e) {
+        alert("Gagal melakukan update: " + e.message);
       }
     }
 
@@ -128,7 +114,11 @@
         const cmd = e.target.value.trim();
         if (cmd.startsWith("/done ")) {
           const kode = cmd.split(" ")[1];
-          updateStatus(kode);
+          if (kode) {
+            updateStatus(kode);
+          } else {
+            alert("Kode tidak ditemukan.");
+          }
         }
       }
     });
