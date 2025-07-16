@@ -12,14 +12,14 @@ exports.handler = async function (event, context) {
     item.name,
     item.price,
     kodeUnik,
-    "Pending",     // ⬅️ Status default
+    "Pending",
     tanggal
   ]);
 
   const body = JSON.stringify({ data: rows });
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbzC-zUWzo-pK8L7Ra9pnyuU1AoPUex-ZX3bK1VyGOewFn9VA1qG-bW1b4iXsjjTE3A/exec", {
+    const response = await fetch("https://script.google.com/macros/s/PASTE-LINK-DARI-DEPLOY-DI-ATAS/exec", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body
