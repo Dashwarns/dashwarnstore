@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Panel - DashWarnStore</title>
+  <meta charset="UTF-8" />
+  <title>Admin DashWarnStore</title>
   <style>
     body {
+      background-color: #0f0f0f;
+      color: white;
       font-family: Arial, sans-serif;
-      background-color: #111;
-      color: #fff;
-      margin: 0;
       padding: 20px;
     }
     h1 {
@@ -18,36 +17,41 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-      background-color: #1a1a1a;
     }
     th, td {
-      padding: 10px;
-      border: 1px solid #444;
+      border: 1px solid #9333ea;
+      padding: 8px;
       text-align: left;
     }
     th {
-      background-color: #9333ea;
-      color: #fff;
+      background-color: #1f1f1f;
     }
-    input {
+    #command {
       width: 100%;
       padding: 10px;
-      margin-top: 20px;
+      margin-top: 30px;
+      border-radius: 8px;
       border: none;
-      border-radius: 6px;
-      font-size: 16px;
+      background-color: #1a1a1a;
+      color: white;
+    }
+    .success {
+      color: lime;
+      margin-top: 10px;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
+  <h1>Admin Panel</h1>
 
-  <h1>Admin DashWarnStore</h1>
-  <input id="commandInput" placeholder="Ketik perintah seperti /done KODEUNIK dan tekan Enter..." />
-
-  <table id="dataTable">
+  <table id="data-table">
     <thead>
       <tr>
-        <th>Nama Produk</th>
+        <th>Produk</th>
         <th>Harga</th>
         <th>Kode Unik</th>
         <th>Status</th>
@@ -57,47 +61,56 @@
     <tbody></tbody>
   </table>
 
+  <input type="text" id="command" placeholder="Ketik perintah seperti /done ABC123" />
+  <div id="message"></div>
+
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyk5odODY7xZoS4yUHPvyQBdYBDWrqv2oTtk8zYeEFEwuYbV6YGofqoedVk6fwdkHs/exec";
+    const SHEET_URL = "https://script.google.com/macros/s/AKfycbyk5odODY7xZoS4yUHPvyQBdYBDWrqv2oTtk8zYeEFEwuYbV6YGofqoedVk6fwdkHs/exec";
 
     async function loadData() {
       try {
-        const res = await fetch(scriptURL);
-        const data = await res.json();
-        const tbody = document.querySelector("#dataTable tbody");
+        const res = await fetch(SHEET_URL);
+        const json = await res.json();
+        const tbody = document.querySelector("tbody");
         tbody.innerHTML = "";
 
-        data.forEach(row => {
+        for (let i = 1; i < json.length; i++) {
+          const row = json[i];
           const tr = document.createElement("tr");
-          row.forEach(col => {
+          row.forEach(cell => {
             const td = document.createElement("td");
-            td.textContent = col;
+            td.textContent = cell;
             tr.appendChild(td);
           });
           tbody.appendChild(tr);
-        });
+        }
       } catch (err) {
-        alert("Gagal memuat data.");
+        document.getElementById("message").textContent = "Gagal memuat data.";
+        document.getElementById("message").className = "error";
       }
     }
 
-    document.getElementById("commandInput").addEventListener("keydown", async function(e) {
+    document.getElementById("command").addEventListener("keydown", async function(e) {
       if (e.key === "Enter") {
-        const command = this.value.trim();
-        if (command.startsWith("/done ")) {
-          const kode = command.split(" ")[1];
-          const res = await fetch(scriptURL, {
+        const val = this.value.trim();
+        if (val.startsWith("/done ")) {
+          const kode = val.slice(6).trim();
+          const res = await fetch(SHEET_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "updateStatus", kodeUnik: kode })
+            body: JSON.stringify({ kode })
           });
-          const text = await res.text();
-          alert(text === "OK" ? "✅ Status berhasil diperbarui." : "❌ Kode tidak ditemukan.");
-          loadData();
-        } else {
-          alert("Perintah tidak dikenal.");
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById("message").textContent = "Status berhasil diperbarui.";
+            document.getElementById("message").className = "success";
+            loadData();
+          } else {
+            document.getElementById("message").textContent = "Kode tidak ditemukan.";
+            document.getElementById("message").className = "error";
+          }
+          this.value = "";
         }
-        this.value = "";
       }
     });
 
