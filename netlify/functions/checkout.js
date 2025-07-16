@@ -1,34 +1,31 @@
 exports.handler = async function (event, context) {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Metode tidak diizinkan" };
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   const data = JSON.parse(event.body);
-  const items = data.items;
-  const kodeUnik = data.kodeUnik;
-  const tanggal = new Date().toISOString().split("T")[0];
-
-  const rows = items.map(item => [
+  const rows = data.items.map(item => [
     item.name,
     item.price,
-    kodeUnik,
+    data.kodeUnik,
     "Pending",
-    tanggal
+    new Date().toISOString().split("T")[0]
   ]);
 
-  const body = JSON.stringify({ data: rows });
-
   try {
-    const response = await fetch("https://script.google.com/macros/s/PASTE-LINK-DARI-DEPLOY-DI-ATAS/exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbwykj1f56R9J9J32Kjh3iFHbbjNPsHQs3GjYPX-q5ADUusOUnU5TYeapxqUXqLYzcY/exec", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ data: rows })
     });
 
-    const text = await response.text();
+    const result = await response.text();
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, kodeUnik })
+      body: JSON.stringify({ success: true, kodeUnik: data.kodeUnik })
     };
   } catch (error) {
     return {
