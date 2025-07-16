@@ -2,21 +2,19 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin DashWarnStore</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel - DashWarnStore</title>
   <style>
     body {
-      background-color: #0f0f0f;
-      color: white;
+      background-color: #000;
+      color: #fff;
       font-family: Arial, sans-serif;
       padding: 20px;
-    }
-    h1 {
-      color: #9333ea;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 16px;
     }
     th, td {
       border: 1px solid #9333ea;
@@ -24,58 +22,52 @@
       text-align: left;
     }
     th {
-      background-color: #1f1f1f;
+      background-color: #9333ea;
     }
-    #command {
-      width: 100%;
+    input {
       padding: 10px;
-      margin-top: 30px;
-      border-radius: 8px;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 6px;
       border: none;
-      background-color: #1a1a1a;
-      color: white;
+      font-size: 16px;
     }
     .success {
-      color: lime;
-      margin-top: 10px;
+      color: #22c55e;
     }
-    .error {
-      color: red;
-      margin-top: 10px;
+    .fail {
+      color: #ef4444;
     }
   </style>
 </head>
 <body>
-  <h1>Admin Panel</h1>
+  <h1>Admin - DashWarnStore</h1>
+  <input id="adminCommand" placeholder="Ketik perintah admin di sini, contoh: /done O8L6VWD9" />
 
   <table id="data-table">
     <thead>
       <tr>
-        <th>Produk</th>
+        <th>Nama Produk</th>
         <th>Harga</th>
         <th>Kode Unik</th>
         <th>Status</th>
         <th>Tanggal</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="data-body"></tbody>
   </table>
 
-  <input type="text" id="command" placeholder="Ketik perintah seperti /done ABC123" />
-  <div id="message"></div>
-
   <script>
-    const SHEET_URL = "https://script.google.com/macros/s/AKfycbyk5odODY7xZoS4yUHPvyQBdYBDWrqv2oTtk8zYeEFEwuYbV6YGofqoedVk6fwdkHs/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyk5odODY7xZoS4yUHPvyQBdYBDWrqv2oTtk8zYeEFEwuYbV6YGofqoedVk6fwdkHs/exec";
 
     async function loadData() {
       try {
-        const res = await fetch(SHEET_URL);
-        const json = await res.json();
-        const tbody = document.querySelector("tbody");
+        const res = await fetch(scriptURL);
+        const data = await res.json();
+        const tbody = document.getElementById("data-body");
         tbody.innerHTML = "";
 
-        for (let i = 1; i < json.length; i++) {
-          const row = json[i];
+        data.slice(1).forEach(row => {
           const tr = document.createElement("tr");
           row.forEach(cell => {
             const td = document.createElement("td");
@@ -83,34 +75,32 @@
             tr.appendChild(td);
           });
           tbody.appendChild(tr);
-        }
+        });
       } catch (err) {
-        document.getElementById("message").textContent = "Gagal memuat data.";
-        document.getElementById("message").className = "error";
+        alert("Gagal memuat data.");
+        console.error(err);
       }
     }
 
-    document.getElementById("command").addEventListener("keydown", async function(e) {
+    async function markDone(kode) {
+      try {
+        const res = await fetch(scriptURL + `?done=${kode}`);
+        const result = await res.text();
+        alert(result);
+        await loadData();
+      } catch (e) {
+        alert("Gagal mengubah status.");
+      }
+    }
+
+    document.getElementById("adminCommand").addEventListener("keydown", e => {
       if (e.key === "Enter") {
-        const val = this.value.trim();
-        if (val.startsWith("/done ")) {
-          const kode = val.slice(6).trim();
-          const res = await fetch(SHEET_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ kode })
-          });
-          const data = await res.json();
-          if (data.success) {
-            document.getElementById("message").textContent = "Status berhasil diperbarui.";
-            document.getElementById("message").className = "success";
-            loadData();
-          } else {
-            document.getElementById("message").textContent = "Kode tidak ditemukan.";
-            document.getElementById("message").className = "error";
-          }
-          this.value = "";
+        const value = e.target.value.trim();
+        if (value.startsWith("/done ")) {
+          const kode = value.slice(6).trim().toUpperCase();
+          markDone(kode);
         }
+        e.target.value = "";
       }
     });
 
