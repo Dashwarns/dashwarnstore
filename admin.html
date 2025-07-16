@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin DashWarnStore</title>
+  <meta charset="UTF-8">
+  <title>Admin Panel - DashWarnStore</title>
   <style>
     body {
-      background-color: #000;
-      color: white;
       font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
+      margin: 0;
       padding: 20px;
     }
     h1 {
@@ -17,123 +18,90 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-      font-size: 14px;
+      background-color: #1a1a1a;
     }
     th, td {
-      border: 1px solid #9333ea;
-      padding: 8px;
+      padding: 10px;
+      border: 1px solid #444;
       text-align: left;
     }
     th {
       background-color: #9333ea;
+      color: #fff;
     }
-    input[type="text"] {
+    input {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       margin-top: 20px;
-      border-radius: 6px;
       border: none;
-    }
-    .status-berhasil {
-      color: #4ade80;
-      font-weight: bold;
-    }
-    .status-pending {
-      color: #facc15;
-      font-weight: bold;
+      border-radius: 6px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
 
-  <h1>Admin Panel - DashWarnStore</h1>
+  <h1>Admin DashWarnStore</h1>
+  <input id="commandInput" placeholder="Ketik perintah seperti /done KODEUNIK dan tekan Enter..." />
 
-  <input type="text" id="commandInput" placeholder="Ketik perintah admin di sini... contoh: /done ABC123" />
-
-  <table>
+  <table id="dataTable">
     <thead>
       <tr>
-        <th>Produk</th>
+        <th>Nama Produk</th>
         <th>Harga</th>
         <th>Kode Unik</th>
         <th>Status</th>
         <th>Tanggal</th>
       </tr>
     </thead>
-    <tbody id="dataBody"></tbody>
+    <tbody></tbody>
   </table>
 
   <script>
-    const sheetURL = "https://script.google.com/macros/s/AKfycbwykj1f56R9J9J32Kjh3iFHbbjNPsHQs3GjYPX-q5ADUusOUnU5TYeapxqUXqLYzcY/exec";
-    let sheetData = [];
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyk5odODY7xZoS4yUHPvyQBdYBDWrqv2oTtk8zYeEFEwuYbV6YGofqoedVk6fwdkHs/exec";
 
-    async function fetchData() {
+    async function loadData() {
       try {
-        const res = await fetch(sheetURL);
-        const json = await res.json();
-        sheetData = json;
-        renderTable();
-      } catch (e) {
-        alert("Gagal memuat data: " + e.message);
+        const res = await fetch(scriptURL);
+        const data = await res.json();
+        const tbody = document.querySelector("#dataTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(row => {
+          const tr = document.createElement("tr");
+          row.forEach(col => {
+            const td = document.createElement("td");
+            td.textContent = col;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        alert("Gagal memuat data.");
       }
     }
 
-    function renderTable() {
-      const tbody = document.getElementById("dataBody");
-      tbody.innerHTML = "";
-      sheetData.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row[0]}</td>
-          <td>${parseInt(row[1]).toLocaleString("id-ID")} Rp</td>
-          <td>${row[2]}</td>
-          <td class="${row[3] === 'Berhasil' ? 'status-berhasil' : 'status-pending'}">${row[3]}</td>
-          <td>${row[4]}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function updateStatus(kodeUnik) {
-      const updated = sheetData.map((row, i) => {
-        if (row[2] === kodeUnik && row[3] !== "Berhasil") {
-          return [i + 1]; // +1 karena baris di Google Sheets mulai dari 1
-        }
-        return null;
-      }).filter(x => x);
-
-      if (updated.length === 0) {
-        alert("Kode tidak ditemukan atau sudah berhasil.");
-        return;
-      }
-
-      // Kirim update ke Google Sheets
-      const res = await fetch(sheetURL + "?updateStatus=true", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: updated })
-      });
-
-      const text = await res.text();
-      if (text.includes("OK")) {
-        alert("Status diperbarui.");
-        fetchData();
-      } else {
-        alert("Gagal mengubah status.");
-      }
-    }
-
-    document.getElementById("commandInput").addEventListener("keydown", e => {
+    document.getElementById("commandInput").addEventListener("keydown", async function(e) {
       if (e.key === "Enter") {
-        const cmd = e.target.value.trim();
-        if (cmd.startsWith("/done ")) {
-          const kode = cmd.split(" ")[1];
-          updateStatus(kode);
+        const command = this.value.trim();
+        if (command.startsWith("/done ")) {
+          const kode = command.split(" ")[1];
+          const res = await fetch(scriptURL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "updateStatus", kodeUnik: kode })
+          });
+          const text = await res.text();
+          alert(text === "OK" ? "✅ Status berhasil diperbarui." : "❌ Kode tidak ditemukan.");
+          loadData();
+        } else {
+          alert("Perintah tidak dikenal.");
         }
+        this.value = "";
       }
     });
 
-    fetchData();
+    loadData();
   </script>
 </body>
 </html>
