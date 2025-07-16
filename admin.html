@@ -2,19 +2,22 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Panel - DashWarnStore</title>
+  <title>Admin DashWarnStore</title>
   <style>
     body {
       background-color: #000;
-      color: #fff;
+      color: white;
       font-family: Arial, sans-serif;
       padding: 20px;
+    }
+    h1 {
+      color: #9333ea;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 16px;
+      margin-top: 20px;
+      font-size: 14px;
     }
     th, td {
       border: 1px solid #9333ea;
@@ -24,87 +27,113 @@
     th {
       background-color: #9333ea;
     }
-    input {
-      padding: 10px;
+    input[type="text"] {
       width: 100%;
+      padding: 8px;
       margin-top: 20px;
       border-radius: 6px;
       border: none;
-      font-size: 16px;
     }
-    .success {
-      color: #22c55e;
+    .status-berhasil {
+      color: #4ade80;
+      font-weight: bold;
     }
-    .fail {
-      color: #ef4444;
+    .status-pending {
+      color: #facc15;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1>Admin - DashWarnStore</h1>
-  <input id="adminCommand" placeholder="Ketik perintah admin di sini, contoh: /done O8L6VWD9" />
 
-  <table id="data-table">
+  <h1>Admin Panel - DashWarnStore</h1>
+
+  <input type="text" id="commandInput" placeholder="Ketik perintah admin di sini... contoh: /done ABC123" />
+
+  <table>
     <thead>
       <tr>
-        <th>Nama Produk</th>
+        <th>Produk</th>
         <th>Harga</th>
         <th>Kode Unik</th>
         <th>Status</th>
         <th>Tanggal</th>
       </tr>
     </thead>
-    <tbody id="data-body"></tbody>
+    <tbody id="dataBody"></tbody>
   </table>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyk5odODY7xZoS4yUHPvyQBdYBDWrqv2oTtk8zYeEFEwuYbV6YGofqoedVk6fwdkHs/exec";
+    const sheetURL = "https://script.google.com/macros/s/AKfycbwykj1f56R9J9J32Kjh3iFHbbjNPsHQs3GjYPX-q5ADUusOUnU5TYeapxqUXqLYzcY/exec";
+    let sheetData = [];
 
-    async function loadData() {
+    async function fetchData() {
       try {
-        const res = await fetch(scriptURL);
-        const data = await res.json();
-        const tbody = document.getElementById("data-body");
-        tbody.innerHTML = "";
-
-        data.slice(1).forEach(row => {
-          const tr = document.createElement("tr");
-          row.forEach(cell => {
-            const td = document.createElement("td");
-            td.textContent = cell;
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        alert("Gagal memuat data.");
-        console.error(err);
+        const res = await fetch(sheetURL);
+        const json = await res.json();
+        sheetData = json;
+        renderTable();
+      } catch (e) {
+        alert("Gagal memuat data: " + e.message);
       }
     }
 
-    async function markDone(kode) {
-      try {
-        const res = await fetch(scriptURL + `?done=${kode}`);
-        const result = await res.text();
-        alert(result);
-        await loadData();
-      } catch (e) {
+    function renderTable() {
+      const tbody = document.getElementById("dataBody");
+      tbody.innerHTML = "";
+      sheetData.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row[0]}</td>
+          <td>${parseInt(row[1]).toLocaleString("id-ID")} Rp</td>
+          <td>${row[2]}</td>
+          <td class="${row[3] === 'Berhasil' ? 'status-berhasil' : 'status-pending'}">${row[3]}</td>
+          <td>${row[4]}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function updateStatus(kodeUnik) {
+      const updated = sheetData.map((row, i) => {
+        if (row[2] === kodeUnik && row[3] !== "Berhasil") {
+          return [i + 1]; // +1 karena baris di Google Sheets mulai dari 1
+        }
+        return null;
+      }).filter(x => x);
+
+      if (updated.length === 0) {
+        alert("Kode tidak ditemukan atau sudah berhasil.");
+        return;
+      }
+
+      // Kirim update ke Google Sheets
+      const res = await fetch(sheetURL + "?updateStatus=true", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: updated })
+      });
+
+      const text = await res.text();
+      if (text.includes("OK")) {
+        alert("Status diperbarui.");
+        fetchData();
+      } else {
         alert("Gagal mengubah status.");
       }
     }
 
-    document.getElementById("adminCommand").addEventListener("keydown", e => {
+    document.getElementById("commandInput").addEventListener("keydown", e => {
       if (e.key === "Enter") {
-        const value = e.target.value.trim();
-        if (value.startsWith("/done ")) {
-          const kode = value.slice(6).trim().toUpperCase();
-          markDone(kode);
+        const cmd = e.target.value.trim();
+        if (cmd.startsWith("/done ")) {
+          const kode = cmd.split(" ")[1];
+          updateStatus(kode);
         }
-        e.target.value = "";
       }
     });
 
-    loadData();
+    fetchData();
   </script>
 </body>
 </html>
