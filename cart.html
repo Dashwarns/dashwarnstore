@@ -1,127 +1,50 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Keranjang Belanja</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #000;
-      color: #fff;
-      padding: 20px;
-    }
-    h1 {
-      color: #a855f7;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #9333ea;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #9333ea;
-    }
-    .checkout-btn {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background: #9333ea;
-      border: none;
-      color: #fff;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .back-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: red;
-      color: white;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 50%;
-      font-weight: bold;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .unique-code {
-      font-size: 24px;
-      color: #0f0;
-      margin-top: 30px;
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
-  <button class="back-btn" onclick="window.location.href='index.html'">X</button>
-  <h1>Keranjang Belanja</h1>
-  <div id="cart-container"></div>
-  <button class="checkout-btn" onclick="checkout()">Checkout</button>
-  <div class="unique-code" id="kodeUnikView"></div>
+<!-- Bagian checkout dalam cart.html -->
+<script>
+  async function checkout() {
+    const kodeUnik = generateKodeUnik();
 
-  <script>
-    let cart = JSON.parse(localStorage.getItem("dashwarn_cart")) || [];
-    const container = document.getElementById("cart-container");
-    const kodeUnikView = document.getElementById("kodeUnikView");
+    // Cek stok terlebih dahulu
+    const stokRes = await fetch("https://script.google.com/macros/s/AKfycbwykj1f56R9J9J32Kjh3iFHbbjNPsHQs3GjYPX-q5ADUusOUnU5TYeapxqUXqLYzcY/exec?stok=true");
+    const stokData = await stokRes.json();
+    const stokMap = {};
+    stokData.forEach(row => stokMap[row[0]] = parseInt(row[1]));
 
-    function renderCart() {
-      if (cart.length === 0) {
-        container.innerHTML = "<p>Keranjang kosong.</p>";
-        document.querySelector(".checkout-btn").style.display = "none";
-        return;
+    const kurang = [];
+
+    for (const item of cart) {
+      const nama = item.name;
+      if (!stokMap[nama] || stokMap[nama] <= 0) {
+        kurang.push(nama);
+      } else {
+        stokMap[nama]--;
       }
+    }
 
-      let html = "<table><tr><th>Produk</th><th>Harga</th></tr>";
-      cart.forEach(item => {
-        html += `<tr><td>${item.name}</td><td>${item.price.toLocaleString("id-ID")} Rp</td></tr>`;
+    if (kurang.length > 0) {
+      alert("Checkout gagal. Produk berikut kehabisan stok:\n\n" + kurang.join("\n"));
+      return;
+    }
+
+    try {
+      const res = await fetch("/.netlify/functions/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: cart, kodeUnik })
       });
-      html += "</table>";
-      container.innerHTML = html;
-    }
 
-    function generateKodeUnik() {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      let kode = "";
-      for (let i = 0; i < 8; i++) {
-        kode += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return kode;
-    }
-
-    async function checkout() {
-      const kodeUnik = generateKodeUnik();
-      try {
-        const res = await fetch("/.netlify/functions/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: cart,
-            kodeUnik
-          })
-        });
-        const result = await res.json();
-        if (result.success) {
-          localStorage.removeItem("dashwarn_cart");
-          cart = [];
-          document.querySelector(".checkout-btn").style.display = "none";
-          container.innerHTML = "";
-          kodeUnikView.innerHTML = "Kode Unik Anda: " + kodeUnik;
-        } else {
-          alert("Gagal mengirim data checkout.");
-        }
-      } catch (err) {
+      const result = await res.json();
+      if (result.success) {
+        localStorage.removeItem("dashwarn_cart");
+        cart = [];
+        document.querySelector(".checkout-btn").style.display = "none";
+        container.innerHTML = "";
+        kodeUnikView.innerHTML = "Kode Unik Anda: " + kodeUnik;
+      } else {
         alert("Gagal mengirim data checkout.");
-        console.error(err);
       }
+    } catch (err) {
+      alert("Gagal mengirim data checkout.");
+      console.error(err);
     }
-
-    renderCart();
-  </script>
-</body>
-</html>
+  }
+</script>
