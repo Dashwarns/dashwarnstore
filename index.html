@@ -1,271 +1,321 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DashWarnStore</title>
-  <style>
-    body {
-      background-color: #0f0f0f;
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    h1 {
-      color: #c084fc;
-    }
-    .product {
-      border: 1px solid #444;
-      border-radius: 12px;
-      padding: 10px;
-      margin-bottom: 10px;
-      background-color: #1a1a1a;
-    }
-    .category {
-      margin-top: 30px;
-    }
-    .variant {
-      display: flex;
-      justify-content: space-between;
-      margin-left: 20px;
-    }
-    .stock {
-      color: #a0f;
-      font-weight: bold;
-    }
-    .add-btn {
-      background: #c084fc;
-      color: black;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .notification {
-      margin-top: 5px;
-      color: red;
-    }
-  </style>
-</head>
-<body>
-  <h1>DashWarnStore</h1>
+exports.handler = async function (event, context) {
+if (event.httpMethod !== "POST") {
+return { statusCode: 405, body: "Metode tidak diizinkan" };
+}
 
-  <div id="products-container"></div>
+try {
+const data = JSON.parse(event.body);
+const items = data.items;
+const kodeUnik = data.kodeUnik;
+const tanggal = new Date().toISOString().split("T")[0];
 
-  <script>
-    const sheetEndpoint = "https://script.google.com/macros/s/AKfycbxXXXXXXX/exec"; // Ganti dengan link Apps Script Anda
-    const products = {
-      "Secret": {
-        "Lavaca": {
-          "Normal": 18000,
-          "Gold": 23000,
-          "Diamond": 26000,
-          "Rainbow": 42000,
-          "Candy": 30000,
-          "Special": {
-            "Normal lavaca + trait meteor": 37000
-          }
-        },
-        "Los Tralaleritos": {
-          "Normal": 23000,
-          "Gold": 28000,
-          "Diamond": 32000,
-          "Rainbow": 55000,
-          "Candy": 38000
-        },
-        "Chimanzini Spiderini": {
-          "Normal": 25000,
-          "Gold": 28000,
-          "Diamond": 34000,
-          "Rainbow": 45000,
-          "Candy": 38000,
-          "Special": {
-            "normal spiderini + trait tung tung": 40000
-          }
-        },
-        "Graipus medussi": {
-          "Normal": 35000,
-          "Gold": 40000,
-          "Diamond": 44000,
-          "Rainbow": 60000,
-          "Candy": 55000
-        },
-        "La Grande": {
-          "Normal": 80000,
-          "Gold": 86000,
-          "Diamond": 90000,
-          "Rainbow": 104000,
-          "Candy": 94000
-        }
-      },
-      "Brainbrot God": {
-        "Turbo": {
-          "Normal": 12000,
-          "Gold": 15000,
-          "Diamond": 18000,
-          "Rainbow": 26000,
-          "Candy": 22000,
-          "Special": {
-            "Turbo normal + trait tung tung": 26000
-          }
-        },
-        "Matteo": {
-          "Normal": 23000,
-          "Gold": 27000,
-          "Diamond": 32000,
-          "Rainbow": 45000,
-          "Candy": 38000
-        },
-        "Gattino Nyanino": {
-          "Normal": 20000,
-          "Gold": 24000,
-          "Diamond": 28000,
-          "Rainbow": 37000,
-          "Candy": 33000
-        },
-        "Tigroligre Frutonni": {
-          "Normal": 7000,
-          "Gold": 10000,
-          "Diamond": 13000,
-          "Rainbow": 21000,
-          "Candy": 16000
-        },
-        "Odin Din Din Dun": {
-          "Normal": 5000,
-          "Gold": 8000,
-          "Diamond": 12000,
-          "Rainbow": 24000,
-          "Candy": 20000
-        },
-        "Orcalero Orcala": {
-          "Normal": 15000,
-          "Gold": 18000,
-          "Diamond": 23000,
-          "Rainbow": 30000,
-          "Candy": 34000
-        },
-        "Tralalero Tralala": {
-          "Normal": 4000,
-          "Gold": 6000,
-          "Diamond": 9000,
-          "Rainbow": 17000,
-          "Candy": 14000
-        },
-        "Cocofanto Elefanto": {
-          "Normal": 1000,
-          "Gold": 3000,
-          "Diamond": 5000,
-          "Rainbow": 10000,
-          "Candy": 8000,
-          "Special": {
-            "cocofanto normal + bulan": 5000
-          }
-        },
-        "Girafe Celestre": {
-          "Normal": 2000,
-          "Gold": 4000,
-          "Diamond": 6000,
-          "Rainbow": 12000,
-          "Candy": 9000,
-          "Special": {
-            "girafa normal + firework": 10000
-          }
-        },
-        "Statutino Libertino": {
-          "Normal": 14000,
-          "Gold": 17000,
-          "Diamond": 22000,
-          "Rainbow": 28000,
-          "Candy": 25000,
-          "Special": {
-            "normal statutino+firework": 26000
-          }
-        }
-      }
-    };
+if (!items || !Array.isArray(items)) {
+throw new Error("Data produk tidak valid.");
+}
 
-    const cart = JSON.parse(localStorage.getItem("cart")) || {};
+const rows = items.map(item => [
+item.name,
+item.price,
+kodeUnik,
+"Pending",
+tanggal
+]);
 
-    async function fetchStock() {
-      const res = await fetch(sheetEndpoint);
-      const data = await res.json();
-      return data; // expected: { "Lavaca Normal": 3, ... }
-    }
+const body = JSON.stringify({ data: rows });
 
-    function formatKey(name, variant) {
-      return `${name} ${variant}`;
-    }
+const response = await fetch("https://script.google.com/macros/s/AKfycbwykj1f56R9J9J32Kjh3iFHbbjNPsHQs3GjYPX-q5ADUusOUnU5TYeapxqUXqLYzcY/exec", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body
+});
 
-    function renderProducts(stockData) {
-      const container = document.getElementById("products-container");
-      for (const category in products) {
-        const catDiv = document.createElement("div");
-        catDiv.className = "category";
-        catDiv.innerHTML = `<h2>${category}</h2>`;
-        for (const name in products[category]) {
-          const product = products[category][name];
-          const prodDiv = document.createElement("div");
-          prodDiv.className = "product";
-          prodDiv.innerHTML = `<strong>${name}</strong><br/>`;
+const text = await response.text();
 
-          for (const variant in product) {
-            if (variant === "Special") continue;
-            const key = formatKey(name, variant);
-            const stock = stockData[key] ?? 0;
-            const price = product[variant];
-            const row = document.createElement("div");
-            row.className = "variant";
-            row.innerHTML = `
-              <span>${variant}: ${price.toLocaleString()} <span class="stock">(Stok: ${stock})</span></span>
-              <button class="add-btn" onclick="addToCart('${name}', '${variant}', ${price}, ${stock})">Tambah</button>
-            `;
-            prodDiv.appendChild(row);
-          }
+if (text.includes("OK")) {
+return {
+statusCode: 200,
+body: JSON.stringify({ success: true, kodeUnik })
+};
+} else {
+return {
+statusCode: 500,
+body: JSON.stringify({ success: false, message: "Google Script gagal merespons OK." })
+};
+}
 
-          // Special
-          if (product.Special) {
-            for (const sname in product.Special) {
-              const sprice = product.Special[sname];
-              const specialKey = formatKey(name, sname);
-              const sstock = stockData[specialKey] ?? 0;
-              const row = document.createElement("div");
-              row.className = "variant";
-              row.innerHTML = `
-                <span>Special - ${sname}: ${sprice.toLocaleString()} <span class="stock">(Stok: ${sstock})</span></span>
-                <button class="add-btn" onclick="addToCart('${name}', '${sname}', ${sprice}, ${sstock}, true)">Tambah</button>
-              `;
-              prodDiv.appendChild(row);
-            }
-          }
+} catch (error) {
+return {
+statusCode: 500,
+body: JSON.stringify({ success: false, message: error.message })
+};
+}
+};
+ini adalah checkout.js (berfungsi dengan baik, edit agar seperti kemauan saya)
 
-          catDiv.appendChild(prodDiv);
-        }
-        container.appendChild(catDiv);
-      }
-    }
+<!DOCTYPE html>  <html lang="id">    <head>    
+  <meta charset="UTF-8" />    
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>    
+  <title>DashWarnStore</title>    
+  <style>    
+    body {    
+      margin: 0;    
+      font-family: Arial, sans-serif;    
+      background-color: #000;    
+      color: #fff;    
+    }    
+    header {    
+      background-color: #9333ea;    
+      padding: 20px;    
+      display: flex;    
+      justify-content: space-between;    
+      align-items: center;    
+    }    
+    header h1 {    
+      margin: 0;    
+      font-size: 24px;    
+    }    
+    .cart-btn {    
+      background-color: #a855f7;    
+      color: white;    
+      padding: 10px 16px;    
+      border: none;    
+      border-radius: 8px;    
+      cursor: pointer;    
+      font-weight: bold;    
+    }    
+    .section-title {    
+      font-size: 20px;    
+      margin: 30px 16px 10px;    
+    }    
+    .product {    
+      background-color: #1a1a1a;    
+      margin: 8px 16px;    
+      border-radius: 10px;    
+      border: 2px solid #9333ea;    
+      overflow: hidden;    
+      cursor: pointer;    
+    }    
+    .product-name {    
+      padding: 12px 16px;    
+      font-size: 18px;    
+    }    
+    .variant {    
+      padding: 10px 16px;    
+      border-top: 1px solid #4b5563;    
+      display: flex;    
+      justify-content: space-between;    
+      align-items: center;    
+    }    
+    .variant button {    
+      background-color: #9333ea;    
+      color: white;    
+      border: none;    
+      padding: 6px 12px;    
+      border-radius: 6px;    
+      cursor: pointer;    
+    }    
+    .notif {    
+      position: fixed;    
+      bottom: 20px;    
+      left: 50%;    
+      transform: translateX(-50%);    
+      background: #9333ea;    
+      color: white;    
+      padding: 10px 16px;    
+      border-radius: 8px;    
+      z-index: 9999;    
+      display: none;    
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);    
+    }    
+  </style>    
+</head>    
+<body>    <header>    
+    <h1>DashWarnStore</h1>    
+    <button class="cart-btn" onclick="window.location.href='cart.html'">    
+      Keranjang (<span id="cart-count">0</span>)    
+    </button>    
+  </header>    <div class="notif" id="notif">Ditambahkan ke keranjang!</div>    <h2 class="section-title">Secret</h2>    
+  <div id="secret-products"></div>    <h2 class="section-title">Brainbrot God</h2>    
+  <div id="brainbrot-products"></div>    <script>    
+    const secretProducts = {    
+      "Lavaca": [    
+        { variant: "Normal", price: 18000 },    
+        { variant: "Gold", price: 23000 },    
+        { variant: "Diamond", price: 26000 },    
+        { variant: "Rainbow", price: 42000 },    
+        { variant: "Candy", price: 30000 },    
+        { variant: "Special (meteor)", price: 37000, special: true }    
+      ],    
+      "Los Tralaleritos": [    
+        { variant: "Normal", price: 23000 },    
+        { variant: "Gold", price: 28000 },    
+        { variant: "Diamond", price: 32000 },    
+        { variant: "Rainbow", price: 55000 },    
+        { variant: "Candy", price: 38000 }    
+      ],    
+      "Chimanzini Spiderini": [    
+        { variant: "Normal", price: 25000 },    
+        { variant: "Gold", price: 28000 },    
+        { variant: "Diamond", price: 34000 },    
+        { variant: "Rainbow", price: 45000 },    
+        { variant: "Candy", price: 38000 },    
+        { variant: "Special (tung tung)", price: 40000, special: true }    
+      ],    
+      "Graipus medussi": [    
+        { variant: "Normal", price: 35000 },    
+        { variant: "Gold", price: 40000 },    
+        { variant: "Diamond", price: 44000 },    
+        { variant: "Rainbow", price: 60000 },    
+        { variant: "Candy", price: 55000 }    
+      ],    
+      "La Grande": [    
+        { variant: "Normal", price: 80000 },    
+        { variant: "Gold", price: 86000 },    
+        { variant: "Diamond", price: 90000 },    
+        { variant: "Rainbow", price: 104000 },    
+        { variant: "Candy", price: 94000 }    
+      ]    
+    };    const brainbrotProducts = {    
+  "Turbo": [    
+    { variant: "Normal", price: 12000 },    
+    { variant: "Gold", price: 15000 },    
+    { variant: "Diamond", price: 18000 },    
+    { variant: "Rainbow", price: 26000 },    
+    { variant: "Candy", price: 22000 },    
+    { variant: "Special (tung tung)", price: 26000, special: true }    
+  ],    
+  "Matteo": [    
+    { variant: "Normal", price: 23000 },    
+    { variant: "Gold", price: 27000 },    
+    { variant: "Diamond", price: 32000 },    
+    { variant: "Rainbow", price: 45000 },    
+    { variant: "Candy", price: 38000 }    
+  ],    
+  "Gattino Nyanino": [    
+    { variant: "Normal", price: 20000 },    
+    { variant: "Gold", price: 24000 },    
+    { variant: "Diamond", price: 28000 },    
+    { variant: "Rainbow", price: 37000 },    
+    { variant: "Candy", price: 33000 }    
+  ],    
+  "Tigroligre Frutonni": [    
+    { variant: "Normal", price: 7000 },    
+    { variant: "Gold", price: 10000 },    
+    { variant: "Diamond", price: 13000 },    
+    { variant: "Rainbow", price: 21000 },    
+    { variant: "Candy", price: 16000 }    
+  ],    
+  "Odin Din Din Dun": [    
+    { variant: "Normal", price: 5000 },    
+    { variant: "Gold", price: 8000 },    
+    { variant: "Diamond", price: 12000 },    
+    { variant: "Rainbow", price: 24000 },    
+    { variant: "Candy", price: 20000 }    
+  ],    
+  "Orcalero Orcala": [    
+    { variant: "Normal", price: 15000 },    
+    { variant: "Gold", price: 18000 },    
+    { variant: "Diamond", price: 23000 },    
+    { variant: "Rainbow", price: 30000 },    
+    { variant: "Candy", price: 34000 }    
+  ],    
+  "Tralalero Tralala": [    
+    { variant: "Normal", price: 4000 },    
+    { variant: "Gold", price: 6000 },    
+    { variant: "Diamond", price: 9000 },    
+    { variant: "Rainbow", price: 17000 },    
+    { variant: "Candy", price: 14000 }    
+  ],    
+  "Cocofanto Elefanto": [    
+    { variant: "Normal", price: 1000 },    
+    { variant: "Gold", price: 3000 },    
+    { variant: "Diamond", price: 5000 },    
+    { variant: "Rainbow", price: 10000 },    
+    { variant: "Candy", price: 8000 },    
+    { variant: "Special (bulan)", price: 5000, special: true }    
+  ],    
+  "Girafe Celestre": [    
+    { variant: "Normal", price: 2000 },    
+    { variant: "Gold", price: 4000 },    
+    { variant: "Diamond", price: 6000 },    
+    { variant: "Rainbow", price: 12000 },    
+    { variant: "Candy", price: 9000 },    
+    { variant: "Special (firework)", price: 10000, special: true }    
+  ],    
+  "Statutino Libertino": [    
+    { variant: "Normal", price: 14000 },    
+    { variant: "Gold", price: 17000 },    
+    { variant: "Diamond", price: 22000 },    
+    { variant: "Rainbow", price: 28000 },    
+    { variant: "Candy", price: 25000 },    
+    { variant: "Special (firework)", price: 26000, special: true }    
+  ]    
+};    
 
-    function addToCart(name, variant, price, stock, isSpecial = false) {
-      const key = `${name}|${variant}`;
-      const qty = cart[key]?.qty || 0;
-      if (qty + 1 > stock) {
-        alert(`Stok untuk ${name} (${variant}) tidak mencukupi!`);
-        return;
-      }
+let cart = JSON.parse(localStorage.getItem("dashwarn_cart")) || [];    
 
-      cart[key] = {
-        name,
-        variant,
-        price,
-        qty: qty + 1
-      };
-      localStorage.setItem("cart", JSON.stringify(cart));
-      alert(`${name} (${variant}) ditambahkan ke keranjang.`);
-    }
+function renderProducts(data, containerId) {    
+  const container = document.getElementById(containerId);    
+  for (const [name, variants] of Object.entries(data)) {    
+    const box = document.createElement("div");    
+    box.className = "product";    
+    const title = document.createElement("div");    
+    title.className = "product-name";    
+    title.textContent = name;    
+    box.appendChild(title);    
 
-    window.onload = async () => {
-      const stock = await fetchStock();
-      renderProducts(stock);
-    };
-  </script>
-</body>
-</html>
+    title.addEventListener("click", () => {    
+      box.querySelectorAll(".variant").forEach(v => v.style.display = v.style.display === "none" ? "flex" : "none");    
+    });    
+
+    variants.forEach(item => {    
+      const v = document.createElement("div");    
+      v.className = "variant";    
+      v.innerHTML = `<span>${item.variant}: ${item.price.toLocaleString("id-ID")} Rp</span><button>Tambah</button>`;    
+      v.style.display = "none";    
+      v.querySelector("button").onclick = () => addToCart(`${name} - ${item.variant}`, item.price, item.special);    
+      box.appendChild(v);    
+    });    
+
+    container.appendChild(box);    
+  }    
+}    
+
+function updateCartCount() {    
+  document.getElementById("cart-count").textContent = cart.length;    
+}    
+
+function saveCart() {    
+  localStorage.setItem("dashwarn_cart", JSON.stringify(cart));    
+}    
+
+function showNotif(msg) {    
+  const n = document.getElementById("notif");    
+  n.textContent = msg;    
+  n.style.display = "block";    
+  setTimeout(() => {    
+    n.style.display = "none";    
+  }, 2000);    
+}    
+
+function addToCart(name, price, isSpecial = false) {    
+  if (isSpecial && cart.find(i => i.name === name)) {    
+    alert("Produk spesial ini hanya bisa dibeli 1x.");    
+    return;    
+  }    
+  cart.push({ name, price });    
+  saveCart();    
+  updateCartCount();    
+  showNotif(`✅ ${name} ditambahkan ke keranjang`);    
+}    
+
+renderProducts(secretProducts, "secret-products");    
+renderProducts(brainbrotProducts, "brainbrot-products");    
+updateCartCount();
+
+</script>  </body>
+
+</html>    dah, mending pake ini, tambahin aja fitur stock, jangan dikurangin apa apa
+
