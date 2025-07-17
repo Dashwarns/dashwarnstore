@@ -1,3 +1,5 @@
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
 exports.handler = async function (event, context) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Metode tidak diizinkan" };
@@ -13,6 +15,7 @@ exports.handler = async function (event, context) {
       throw new Error("Data produk tidak valid.");
     }
 
+    // Format data untuk dikirim ke Sheets
     const rows = items.map(item => [
       item.name,
       item.price,
@@ -21,14 +24,15 @@ exports.handler = async function (event, context) {
       tanggal
     ]);
 
-    const body = JSON.stringify({ data: rows });
-
     const response = await fetch("https://script.google.com/macros/s/AKfycbwykj1f56R9J9J32Kjh3iFHbbjNPsHQs3GjYPX-q5ADUusOUnU5TYeapxqUXqLYzcY/exec", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body
+      body: JSON.stringify({
+        data: rows,
+        kode: kodeUnik
+      })
     });
 
     const text = await response.text();
