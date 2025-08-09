@@ -33,6 +33,7 @@
             color: white;
             border-radius: 5px;
             transition: background-color 0.3s;
+            margin-top: 10px;
         }
         button:disabled {
             background-color: #ccc;
@@ -100,14 +101,18 @@
         <div class="image-container">
             <h2>Cropped QRIS</h2>
             <canvas id="qrisCanvas" width="300" height="300" style="border: 1px solid #eee; display: none;"></canvas>
+            <button id="downloadButton" style="display: none;">Download QRIS</button>
         </div>
     </div>
+
     <script>
         const imageUpload = document.getElementById('imageUpload');
         const cropButton = document.getElementById('cropButton');
+        const downloadButton = document.getElementById('downloadButton'); // Ambil elemen tombol download
         const originalImage = document.getElementById('originalImage');
         const qrisCanvas = document.getElementById('qrisCanvas');
         const ctx = qrisCanvas.getContext('2d');
+
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -117,6 +122,7 @@
                         cropButton.disabled = false;
                         originalImage.style.display = 'block';
                         qrisCanvas.style.display = 'none';
+                        downloadButton.style.display = 'none'; // Sembunyikan tombol download
                     };
                     originalImage.src = e.target.result;
                 };
@@ -126,22 +132,40 @@
                 originalImage.style.display = 'none';
                 qrisCanvas.style.display = 'none';
                 cropButton.disabled = true;
+                downloadButton.style.display = 'none';
             }
         });
+
         cropButton.addEventListener('click', () => {
             if (!originalImage.src || originalImage.src === '#') {
                 return;
             }
+
             const imageWidth = originalImage.naturalWidth;
             const imageHeight = originalImage.naturalHeight;
-            const cropFactor = 0.62;
+
+            const cropFactor = 0.8;
             const cropSize = Math.min(imageWidth, imageHeight) * cropFactor;
-            const cropY = imageHeight * 0.29;
+            
+            const cropY = imageHeight * 0.25;
             const cropX = (imageWidth - cropSize) / 2;
+
             qrisCanvas.width = cropSize;
             qrisCanvas.height = cropSize;
             ctx.drawImage(originalImage, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize);
             qrisCanvas.style.display = 'block';
+            downloadButton.style.display = 'block'; // Tampilkan tombol download setelah cropping
+        });
+
+        // Event listener untuk tombol download
+        downloadButton.addEventListener('click', () => {
+            const dataURL = qrisCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = 'qris_cropped.png'; // Nama file default
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
     </script>
 </body>
