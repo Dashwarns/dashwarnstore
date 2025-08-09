@@ -61,13 +61,28 @@
             border-radius: 5px;
         }
         canvas {
+            max-width: 100%;
+            height: auto;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        @media (max-width: 600px) {
+
+        /* --- Perbaikan CSS untuk Responsif --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
             .container {
                 flex-direction: column;
                 align-items: center;
+                gap: 15px;
+            }
+            .image-container {
+                width: 90%; /* Menggunakan lebar 90% dari layar */
+            }
+            img, canvas {
+                max-width: 100%;
+                height: auto;
             }
         }
     </style>
@@ -125,13 +140,10 @@
             const imageWidth = originalImage.naturalWidth;
             const imageHeight = originalImage.naturalHeight;
 
-            // Perbaikan skrip utama:
-            // Nilai cropFactor ditingkatkan menjadi 0.6 agar area crop lebih besar.
-            const cropFactor = 0.62; 
-            const cropSize = Math.min(imageWidth, imageHeight) * cropFactor; 
+            const cropFactor = 0.62;
+            const cropSize = Math.min(imageWidth, imageHeight) * cropFactor;
             
-            // Offset Y tetap 0.3 untuk menjaga posisi crop di bagian atas gambar.
-            const cropY = imageHeight * 0.29; 
+            const cropY = imageHeight * 0.29;
             const cropX = (imageWidth - cropSize) / 2;
 
             qrisCanvas.width = cropSize;
