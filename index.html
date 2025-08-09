@@ -125,11 +125,14 @@
             const imageWidth = originalImage.naturalWidth;
             const imageHeight = originalImage.naturalHeight;
 
-            // Perbaikan di sini: Nilai perkalian diubah menjadi 0.8
-            // agar area yang dipotong lebih besar dan mencakup seluruh QRIS
-            const cropSize = Math.min(imageWidth, imageHeight) * 0.8;
+            // Perbaikan skrip utama ada di sini
+            // Nilai 0.5 dapat disesuaikan untuk mendapatkan ukuran crop yang pas.
+            // Nilai 0.3 untuk posisi vertikal, menggeser area crop ke atas.
+            const cropFactor = 0.5; 
+            const cropSize = Math.min(imageWidth, imageHeight) * cropFactor; 
+            
             const cropX = (imageWidth - cropSize) / 2;
-            const cropY = (imageHeight - cropSize) / 2;
+            const cropY = imageHeight * 0.3; 
 
             qrisCanvas.width = cropSize;
             qrisCanvas.height = cropSize;
@@ -137,6 +140,5 @@
             qrisCanvas.style.display = 'block';
         });
     </script>
-
 </body>
 </html>
