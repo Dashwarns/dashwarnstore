@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>QRIS Cropper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: sans-serif;
@@ -66,8 +67,6 @@
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        /* --- Perbaikan CSS untuk Responsif --- */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -78,7 +77,7 @@
                 gap: 15px;
             }
             .image-container {
-                width: 90%; /* Menggunakan lebar 90% dari layar */
+                width: 90%;
             }
             img, canvas {
                 max-width: 100%;
@@ -103,14 +102,12 @@
             <canvas id="qrisCanvas" width="300" height="300" style="border: 1px solid #eee; display: none;"></canvas>
         </div>
     </div>
-
     <script>
         const imageUpload = document.getElementById('imageUpload');
         const cropButton = document.getElementById('cropButton');
         const originalImage = document.getElementById('originalImage');
         const qrisCanvas = document.getElementById('qrisCanvas');
         const ctx = qrisCanvas.getContext('2d');
-
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -131,21 +128,16 @@
                 cropButton.disabled = true;
             }
         });
-
         cropButton.addEventListener('click', () => {
             if (!originalImage.src || originalImage.src === '#') {
                 return;
             }
-
             const imageWidth = originalImage.naturalWidth;
             const imageHeight = originalImage.naturalHeight;
-
             const cropFactor = 0.62;
             const cropSize = Math.min(imageWidth, imageHeight) * cropFactor;
-            
             const cropY = imageHeight * 0.29;
             const cropX = (imageWidth - cropSize) / 2;
-
             qrisCanvas.width = cropSize;
             qrisCanvas.height = cropSize;
             ctx.drawImage(originalImage, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize);
