@@ -144,10 +144,10 @@
             const imageWidth = originalImage.naturalWidth;
             const imageHeight = originalImage.naturalHeight;
 
-            const cropFactor = 0.66;
+            const cropFactor = 0.65;
             const cropSize = Math.min(imageWidth, imageHeight) * cropFactor;
             
-            const cropY = imageHeight * 0.29;
+            const cropY = imageHeight * 0.32;
             const cropX = (imageWidth - cropSize) / 2;
 
             qrisCanvas.width = cropSize;
